@@ -1,0 +1,32 @@
+name: Novel Indirici
+
+on:
+  workflow_dispatch: # İstediğin zaman elle tetiklemek için
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Depodaki kodları indir
+        uses: actions/checkout@v4
+
+      - name: Python'u ayarla
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Gereksinimleri yükle
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Python scriptini çalıştır
+        run: python novelturk_epub1.py
+
+      - name: Üretilen EPUB dosyasını kaydet
+        uses: actions/upload-artifact@v4
+        with:
+          name: cikan-epub
+          path: "*.epub"
+          
