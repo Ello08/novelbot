@@ -1,0 +1,65 @@
+name: NovelTurk EPUB
+
+on:
+  workflow_dispatch:
+    inputs:
+      series:
+        description: "Seri linki veya slug (virgulle ayirin)"
+        required: true
+        default: "https://novelturk.com/novel/solo-farming-in-the-tower/"
+      max_chapters:
+        description: "Bolum siniri (0 = tum seri)"
+        default: "5"
+      probe:
+        description: "Sadece erisim tanisi yap (indirme yok)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  epub:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Bagimliliklar
+        run: python -m pip install -U curl_cffi beautifulsoup4 lxml EbookLib tqdm pillow
+
+      - name: Bolum onbellegini geri yukle
+        uses: actions/cache/restore@v4
+        with:
+          path: out/novelturk_cache
+          key: nt-cache-${{ github.run_id }}
+          restore-keys: nt-cache-
+
+      - name: Calistir
+        env:
+          NT_SERIES: ${{ inputs.series }}
+          NT_MAX_CHAPTERS: ${{ inputs.max_chapters }}
+          NT_PROBE: ${{ inputs.probe && '1' || '0' }}
+          NT_OUT: out
+          NOVELTURK_PROXY: ${{ secrets.NOVELTURK_PROXY }}
+          PYTHONUNBUFFERED: "1"
+        run: python novelturk_epub1.py
+
+      - name: Bolum onbellegini kaydet
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: out/novelturk_cache
+          key: nt-cache-${{ github.run_id }}
+
+      - name: EPUB'lari yukle
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: epub
+          path: out/*.epub
+          if-no-files-found: warn
